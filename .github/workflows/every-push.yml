@@ -19,12 +19,26 @@ jobs:
         id: cache
         with:
           path: node_modules
-          key: npm-packages-${{ hashFiles('**/package-lock.json') }}
+          key: npm-packages-${{ hashFiles('**/yarn.lock') }}
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: npm install
+        run: yarn
 
       - name: Build Test
         run: npm run build
         if: ${{ always() }}
+
+      - name: Send slack when failed
+        if: ${{ failure() }}
+        # 직접 '만든' Action이므로 uses 키워드를 이용해서 경로를 입력
+        uses: ./.github/actions/slack
+        with:
+          slack_incoming_url: ${{ secrets.SLACK_INCOMING_URL }}
+
+      - name: Send slack if completed
+        if: ${{ success() }}
+        uses: ./.github/actions/slack
+        with:
+          status: success
+          slack_incoming_url: ${{ secrets.SLACK_INCOMING_URL }}
